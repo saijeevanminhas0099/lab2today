@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Selection App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        button, input {
+            margin: 5px 0;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        #content {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cat Selection App</h1>
+    <button onclick="loadCatNames()">All Names</button>
+    <br>
+    <input type="number" id="healthInput" placeholder="Enter health issue number">
+    <button onclick="loadCatsByHealthIssue()">Health Issues</button>
+    <br>
+    <button onclick="toggleWeight()">Weight</button>
+    <label>
+        <input type="checkbox" id="metricToggle" onchange="toggleWeight()"> Metric
+    </label>
+    <br>
+    <button onclick="loadIntelligenceFriendly()">Intelligence – Friendly</button>
+    <br>
+    <button onclick="averageIntelligence()">Average Intelligence</button>
+    <br>
+    <button onclick="averageIntelligenceFriendly()">Average Intelligence for Child Friendly</button>
+
+    <div id="content"></div>
+
+    <script>
+        const apiUrl = "https://api.thecatapi.com/v1/breeds";
+        let catData = [];
+
+        // Fetch cat data from the API once and store it globally
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to fetch cat data.");
+                return response.json();
+            })
+            .then(data => {
+                catData = data;
+            })
+            .catch(error => console.error("Error:", error));
+
+        // Function to display all cat names and count
+        function loadCatNames() {
+            if (catData.length === 0) {
+                displayContent(["No cat data available."]);
+                return;
+            }
+            const names = catData.map(cat => cat.name);
+            const totalCount = catData.length;
+            const content = [`Total number of cats: ${totalCount}`, ...names];
+            displayContent(content);
+        }
+
+        // Function to display cats by health issue number and count
+        function loadCatsByHealthIssue() {
+            const healthIssueNumber = parseInt(document.getElementById("healthInput").value, 10);
+            if (isNaN(healthIssueNumber)) return;
+
+            const filteredCats = catData.filter(cat => cat.health_issues === healthIssueNumber);
+            const totalCount = filteredCats.length;
+            const names = filteredCats.map(cat => cat.name);
+            const content = totalCount > 0
+                ? [`Total number of cats with Health Issue #${healthIssueNumber}: ${totalCount}`, ...names]
+                : [`No cats found with Health Issue #${healthIssueNumber}.`];
+            displayContent(content);
+        }
+
+        // Function to display weights in Imperial or Metric
+        function toggleWeight() {
+            const isMetric = document.getElementById("metricToggle").checked;
+            const weightType = isMetric ? "metric" : "imperial";
+            const weights = catData.map(cat => `${cat.name}: ${cat.weight[weightType]}`);
+            displayContent(weights);
+        }
+
+        // Function to display intelligence and friendliness
+        function loadIntelligenceFriendly() {
+            const data = catData.map(cat => `${cat.name} - I: ${cat.intelligence}, F: ${cat.child_friendly}`);
+            displayContent(data);
+        }
+
+        // Function to calculate average intelligence
+        function averageIntelligence() {
+            if (catData.length === 0) {
+                displayContent(["No cat data available."]);
+                return;
+            }
+            const avg = catData.reduce((sum, cat) => sum + cat.intelligence, 0) / catData.length;
+            displayContent([`Average Intelligence: ${avg.toFixed(2)}`]);
+        }
+
+        // Function to calculate average intelligence of child-friendly cats
+        function averageIntelligenceFriendly() {
+            if (catData.length === 0) {
+                displayContent(["No cat data available."]);
+                return;
+            }
+            const friendlyCats = catData.filter(cat => cat.child_friendly >= 5);
+            if (friendlyCats.length === 0) {
+                displayContent(["No child-friendly cats found."]);
+                return;
+            }
+            const avg = friendlyCats.reduce((sum, cat) => sum + cat.intelligence, 0) / friendlyCats.length;
+            displayContent([`Average Intelligence of Child-Friendly Cats: ${avg.toFixed(2)}`]);
+        }
+
+        // Function to display content in the content area
+        function displayContent(data) {
+            const content = document.getElementById("content");
+            content.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.textContent = item;
+                content.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
